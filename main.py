@@ -2527,177 +2527,302 @@ async def verify_certificate_api(
     if not date:
         date = datetime.now().strftime("%Y-%m-%d")
         
+    verificationUrl = f"{app_base_url}/api/certificate/verify?id={id}&student={urllib.parse.quote(student)}&course={urllib.parse.quote(course)}&date={date}"
+        
     html_content = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AIGRA Certificate Verification</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+        <title>AIGRA Academy - Certificate Verification</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
         <style>
             :root {{
-                --bg-dark: #0f172a;
-                --text-main: #f8fafc;
-                --accent-yellow: #facc15;
-                --accent-blue: #00f2fe;
+                --gold: #dfb15b;
+                --gold-light: #f3e5ab;
+                --slate-dark: #0f172a;
+                --slate-border: #1e293b;
             }}
             body {{
                 margin: 0;
                 padding: 0;
                 font-family: 'Outfit', sans-serif;
-                background-color: var(--bg-dark);
-                background-image: radial-gradient(circle at top right, rgba(0, 242, 254, 0.15), transparent 400px),
-                                  radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.15), transparent 400px);
-                color: var(--text-main);
+                background-color: #0b0f19;
+                color: #f8fafc;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 min-height: 100vh;
+                background-image: radial-gradient(circle at 10% 20%, rgba(223, 177, 91, 0.05), transparent 400px),
+                                  radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.05), transparent 400px);
             }}
-            .container {{
-                background: rgba(30, 41, 59, 0.45);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 24px;
-                padding: 40px;
-                max-width: 600px;
-                width: 90%;
-                text-align: center;
-                box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255,255,255,0.05);
-                backdrop-filter: blur(12px);
+            .cert-container {{
                 position: relative;
+                width: 900px;
+                height: 620px;
+                background: linear-gradient(135deg, #0b0f19 0%, #1e293b 100%);
+                padding: 40px;
+                border: 20px solid var(--slate-border);
+                box-shadow: 0 40px 100px rgba(0,0,0,0.8), inset 0 0 30px rgba(223, 177, 91, 0.1);
+                border-radius: 12px;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: space-between;
+                text-align: center;
             }}
-            .verified-badge {{
-                display: inline-block;
-                padding: 6px 16px;
-                background: rgba(16, 185, 129, 0.15);
-                color: #10b981;
-                border: 1px solid rgba(16, 185, 129, 0.3);
-                border-radius: 20px;
-                font-size: 0.85rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                margin-bottom: 24px;
+            /* Inner double thin gold border */
+            .cert-container::before {{
+                content: '';
+                position: absolute;
+                top: 10px; bottom: 10px; left: 10px; right: 10px;
+                border: 2px solid var(--gold);
+                border-radius: 6px;
+                pointer-events: none;
+                opacity: 0.75;
             }}
-            h1 {{
+            .cert-header {{
+                font-family: 'Cinzel', serif;
+                font-weight: 700;
                 font-size: 2.2rem;
-                margin: 0 0 10px 0;
-                font-weight: 800;
-                background: linear-gradient(135deg, var(--accent-yellow), #f59e0b);
+                letter-spacing: 4px;
+                background: linear-gradient(to right, var(--gold-light), var(--gold), var(--gold-light));
                 -webkit-background-clip: text;
                 background-clip: text;
                 color: transparent;
+                margin-top: 10px;
             }}
-            .cert-id {{
-                font-family: 'JetBrains Mono', monospace;
-                color: var(--accent-blue);
-                font-size: 1.1rem;
-                margin-bottom: 30px;
+            .cert-subtitle {{
+                font-family: 'Outfit', sans-serif;
+                font-size: 0.85rem;
+                letter-spacing: 5px;
+                text-transform: uppercase;
+                color: #94a3b8;
+                margin-top: 5px;
             }}
-            .detail-block {{
-                background: rgba(0, 0, 0, 0.2);
-                border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 30px;
-                border: 1px solid rgba(255,255,255,0.05);
-                text-align: left;
+            .present-text {{
+                font-size: 0.95rem;
+                color: #cbd5e1;
+                font-style: italic;
+                margin-top: 25px;
             }}
-            .detail-row {{
+            .student-name {{
+                font-family: 'Cinzel', serif;
+                font-size: 2.8rem;
+                font-weight: 800;
+                color: #ffffff;
+                margin: 15px 0;
+                text-shadow: 0 0 15px rgba(223, 177, 91, 0.3);
+                border-bottom: 2px dashed rgba(223, 177, 91, 0.3);
+                padding-bottom: 5px;
+                min-width: 450px;
+                display: inline-block;
+            }}
+            .course-text {{
+                font-size: 0.95rem;
+                color: #cbd5e1;
+                margin-top: 5px;
+            }}
+            .course-name {{
+                font-family: 'Outfit', sans-serif;
+                font-size: 1.8rem;
+                font-weight: 800;
+                color: #22d3ee;
+                margin: 10px 0;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }}
+            .cert-description {{
+                font-size: 0.8rem;
+                color: #64748b;
+                max-width: 600px;
+                line-height: 1.6;
+            }}
+            .cert-footer {{
                 display: flex;
                 justify-content: space-between;
-                padding: 12px 0;
-                border-bottom: 1px solid rgba(255,255,255,0.05);
-            }}
-            .detail-row:last-child {{
-                border-bottom: none;
-            }}
-            .label {{
-                color: #64748b;
-                font-weight: 600;
-            }}
-            .value {{
-                color: #cbd5e1;
-                font-weight: 600;
-            }}
-            .footer-branding {{
-                font-size: 0.8rem;
-                color: #475569;
+                align-items: flex-end;
+                width: 100%;
                 margin-top: 20px;
+                padding: 0 20px;
             }}
-            .btn-action {{
-                display: inline-block;
+            .footer-block {{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 180px;
+            }}
+            .signature-line {{
+                width: 100%;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                margin-bottom: 8px;
+            }}
+            .signature-title {{
+                font-size: 0.75rem;
+                color: #94a3b8;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }}
+            .cert-seal {{
+                position: relative;
+                width: 85px;
+                height: 85px;
+                background: radial-gradient(circle, var(--gold-light) 0%, var(--gold) 70%, #d4af37 100%);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(223, 177, 91, 0.4), inset 0 0 10px rgba(0,0,0,0.2);
+                color: #0b0f19;
+                font-weight: 800;
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border: 2px dashed #0b0f19;
+            }}
+            .cert-seal::after {{
+                content: 'AIGRA';
+                font-family: 'Cinzel', serif;
+                font-weight: 800;
+                font-size: 0.9rem;
+            }}
+            .verification-box {{
+                display: flex;
+                gap: 15px;
+                align-items: center;
+                text-align: left;
+            }}
+            .qr-code {{
+                width: 75px;
+                height: 75px;
+                border: 2px solid #fff;
+                border-radius: 4px;
+            }}
+            .meta-text {{
+                font-size: 0.65rem;
+                color: #64748b;
+                line-height: 1.4;
+            }}
+            .actions-bar {{
                 margin-top: 25px;
-                padding: 14px 28px;
-                background: linear-gradient(135deg, var(--accent-yellow), #f59e0b);
-                color: #0f172a;
+                display: flex;
+                gap: 15px;
+            }}
+            .btn {{
+                padding: 12px 24px;
+                background: linear-gradient(135deg, var(--gold), #d4af37);
+                color: #0b0f19;
                 font-weight: 700;
                 border: none;
-                border-radius: 8px;
+                border-radius: 6px;
                 cursor: pointer;
-                box-shadow: 0 4px 14px rgba(250, 204, 21, 0.3);
+                box-shadow: 0 4px 14px rgba(223, 177, 91, 0.3);
                 transition: all 0.2s ease;
                 font-family: 'Outfit', sans-serif;
-                font-size: 0.95rem;
+                font-size: 0.9rem;
                 text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
             }}
-            .btn-action:hover {{
+            .btn:hover {{
                 transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(250, 204, 21, 0.4);
+                box-shadow: 0 6px 20px rgba(223, 177, 91, 0.5);
             }}
+            .btn-secondary {{
+                background: rgba(255, 255, 255, 0.05);
+                color: #cbd5e1;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: none;
+            }}
+            .btn-secondary:hover {{
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+            }}
+            
+            /* Responsive & Printing Styles */
             @media print {{
                 body {{
                     background: #ffffff !important;
                     color: #000000 !important;
                 }}
-                .container {{
+                .actions-bar {{
+                    display: none !important;
+                }}
+                .cert-container {{
+                    width: 100% !important;
+                    height: 100% !important;
                     border: none !important;
                     box-shadow: none !important;
-                    background: none !important;
-                    backdrop-filter: none !important;
+                    background: #0f172a !important; /* Force background print color in slate */
+                    position: absolute;
+                    top: 0; left: 0;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }}
-                .btn-action {{
-                    display: none !important;
+            }}
+            @media (max-width: 950px) {{
+                .cert-container {{
+                    width: 95%;
+                    height: auto;
+                    aspect-ratio: 1.41;
+                    padding: 20px;
+                }}
+                .student-name {{
+                    font-size: 2.2rem;
+                    min-width: 80%;
+                }}
+                .course-name {{
+                    font-size: 1.4rem;
                 }}
             }}
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="verified-badge">✓ Verified Credential</div>
-            <h1>AIGRA Completion Certificate</h1>
-            <div class="cert-id">ID: {id}</div>
-            
-            <div class="detail-block">
-                <div class="detail-row">
-                    <span class="label">Recipient Name</span>
-                    <span class="value" style="color: #ffffff; font-size: 1.1rem; font-weight: 800;">{student}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Course Completed</span>
-                    <span class="value" style="color: var(--accent-blue);">{course}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Issued Date</span>
-                    <span class="value">{date}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Status</span>
-                    <span class="value" style="color: #10b981;">ACTIVE / VERIFIED</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Authority</span>
-                    <span class="value">AIGRA CyberLab Academy</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Cryptographic Proof</span>
-                    <span class="value" style="font-family:'JetBrains Mono'; font-size:0.75rem;">SHA256-RSA-SIGNED-OK</span>
-                </div>
+        <div class="cert-container">
+            <div>
+                <div class="cert-header">AIGRA ACADEMY</div>
+                <div class="cert-subtitle">Cyber Security & Threat Intelligence Division</div>
             </div>
             
-            <button onclick="window.print()" class="btn-action">🖨️ Download / Print Certificate</button>
-            <div class="footer-branding">AIGRA Cyber Security Portal System • Real-Time Integrity Validated</div>
+            <div>
+                <div class="present-text">This is proudly presented to</div>
+                <div class="student-name">{student}</div>
+                <div class="course-text">for successfully completing all academic requirements, hands-on lab exercises, and diagnostic challenges in</div>
+                <div class="course-name">{course}</div>
+            </div>
+            
+            <div class="cert-description">
+                Granted under the directive of the AIGRA Security Systems Curriculum Guidelines. Verified with cryptographic signature and logged in the institutional ledger database.
+            </div>
+            
+            <div class="cert-footer">
+                <div class="footer-block">
+                    <div style="font-family: 'Cinzel', serif; font-size: 0.85rem; color: #fff; margin-bottom: 2px; font-weight: bold;">professor_x</div>
+                    <div class="signature-line"></div>
+                    <div class="signature-title">Academy Director</div>
+                </div>
+                
+                <div class="cert-seal"></div>
+                
+                <div class="verification-box">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=75x75&data={urllib.parse.quote(verificationUrl)}" class="qr-code" alt="Verification Code">
+                    <div class="meta-text">
+                        <b>Verification ID:</b><br>
+                        {id}<br>
+                        <b>Date Issued:</b><br>
+                        {date}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions-bar">
+            <button onclick="window.print()" class="btn">🖨️ Print / Save as PDF</button>
+            <a href="/" class="btn btn-secondary">🏠 Back to Portal</a>
         </div>
     </body>
     </html>
