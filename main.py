@@ -728,10 +728,13 @@ async def login(req: LoginRequest, request: Request):
 # Strict Incidents Isolation
 @app.get("/api/incidents")
 async def get_incidents(role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
+    
     if role == "admin":
-        if username_clean != "de4thnote":
-            log_and_ban_intruder(request, username, "Threat console bypass alert")
+        if username_clean not in ["de4thnote", "reiz"]:
+            log_and_ban_intruder(request, username_clean, "Threat console bypass alert")
             raise HTTPException(status_code=403, detail="Violation logged.")
         return {"incidents": reported_incidents}
         
@@ -741,8 +744,9 @@ async def get_incidents(role: str = Query(...), username: str = Query(...), requ
 
 @app.post("/api/incident")
 async def create_incident(req: IncidentRequest, request: Request):
+    user = get_user_from_session(request)
+    reporter_clean = user["username"].strip().lower()
     new_id = len(reported_incidents) + 1
-    reporter_clean = req.reporter.strip().lower()
     client_ip = request.client.host
     
     reported_incidents.append({
@@ -780,10 +784,12 @@ async def create_incident(req: IncidentRequest, request: Request):
 
 @app.post("/api/incident/solve")
 async def resolve_incident(req: SolveRequest, role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     client_ip = request.client.host
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Incident solve bypass alert")
+        log_and_ban_intruder(request, username_clean, "Incident solve bypass alert")
         raise HTTPException(status_code=403, detail="Violation logged.")
     for inc in reported_incidents:
         if inc["id"] == req.id:
@@ -812,9 +818,11 @@ async def resolve_incident(req: SolveRequest, role: str = Query(...), username: 
 # Faculty Management
 @app.get("/api/admin/faculty")
 async def get_faculty_list(role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Faculty list bypass alert")
+        log_and_ban_intruder(request, username_clean, "Faculty list bypass alert")
         raise HTTPException(status_code=403, detail="Access denied.")
     return {
         "faculties": [{"username": k, "password": v} for k, v in faculty_db.items()],
@@ -824,10 +832,12 @@ async def get_faculty_list(role: str = Query(...), username: str = Query(...), r
 
 @app.post("/api/admin/faculty")
 async def create_faculty(req: FacultyCreateRequest, role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     client_ip = request.client.host
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Faculty create bypass alert")
+        log_and_ban_intruder(request, username_clean, "Faculty create bypass alert")
         raise HTTPException(status_code=403, detail="Access denied.")
     new_user = req.username.strip().lower()
     faculty_limit = load_db("faculty_limit.json", 5)
@@ -853,9 +863,11 @@ async def create_faculty(req: FacultyCreateRequest, role: str = Query(...), user
 
 @app.post("/api/admin/faculty/limit")
 async def update_faculty_limit(req: FacultyLimitRequest, role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Faculty limit configuration bypass")
+        log_and_ban_intruder(request, username_clean, "Faculty limit configuration bypass")
         raise HTTPException(status_code=403, detail="Access denied.")
     global faculty_limit
     faculty_limit = req.limit
@@ -864,10 +876,12 @@ async def update_faculty_limit(req: FacultyLimitRequest, role: str = Query(...),
 
 @app.delete("/api/admin/faculty")
 async def delete_faculty(target_username: str = Query(...), role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     client_ip = request.client.host
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Faculty deletion bypass alert")
+        log_and_ban_intruder(request, username_clean, "Faculty deletion bypass alert")
         raise HTTPException(status_code=403, detail="Access denied.")
     target_clean = target_username.strip().lower()
     if target_clean in faculty_db:
@@ -880,9 +894,11 @@ async def delete_faculty(target_username: str = Query(...), role: str = Query(..
 # Administrative IP Termination & Blacklisting
 @app.post("/api/admin/ban")
 async def ban_ip(req: BanIPRequest, role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "IP termination bypass attempt")
+        log_and_ban_intruder(request, username_clean, "IP termination bypass attempt")
         raise HTTPException(status_code=403, detail="Access denied.")
     if req.ip in ["127.0.0.1", "localhost", "::1"]:
         raise HTTPException(status_code=400, detail="Cannot ban loopback / localhost IP address.")
@@ -893,9 +909,11 @@ async def ban_ip(req: BanIPRequest, role: str = Query(...), username: str = Quer
 # Metrics & User Live Activity Logs
 @app.get("/api/admin/metrics")
 async def get_system_metrics(role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Admin metrics bypass alert")
+        log_and_ban_intruder(request, username_clean, "Admin metrics bypass alert")
         raise HTTPException(status_code=403, detail="Access denied.")
     all_users = [{"username": k, "role": "student"} for k in student_db.keys()] + \
                 [{"username": k, "role": "faculty"} for k in faculty_db.keys()]
@@ -1956,9 +1974,11 @@ async def check_auth_status(username: str = Query(...), role: str = Query(...), 
 # 8. User Management Endpoint (Admin Controls)
 @app.get("/api/admin/users")
 async def get_user_list(role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Bypass attempt on Admin User List console")
+        log_and_ban_intruder(request, username_clean, "Bypass attempt on Admin User List console")
         raise HTTPException(status_code=403, detail="Violation logged.")
     
     users = []
@@ -1981,9 +2001,11 @@ async def get_user_list(role: str = Query(...), username: str = Query(...), requ
 
 @app.post("/api/admin/user/ban")
 async def admin_ban_user(target_user: str = Query(...), role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Bypass attempt to suspend user account")
+        log_and_ban_intruder(request, username_clean, "Bypass attempt to suspend user account")
         raise HTTPException(status_code=403, detail="Access denied.")
         
     target_clean = target_user.strip().lower()
@@ -1993,9 +2015,11 @@ async def admin_ban_user(target_user: str = Query(...), role: str = Query(...), 
 
 @app.post("/api/admin/user/unban")
 async def admin_unban_user(target_user: str = Query(...), role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Bypass attempt to lift user account suspension")
+        log_and_ban_intruder(request, username_clean, "Bypass attempt to lift user account suspension")
         raise HTTPException(status_code=403, detail="Access denied.")
         
     target_clean = target_user.strip().lower()
@@ -2006,9 +2030,11 @@ async def admin_unban_user(target_user: str = Query(...), role: str = Query(...)
 
 @app.delete("/api/admin/user")
 async def admin_delete_user(target_user: str = Query(...), role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if not is_admin(username_clean, role):
-        log_and_ban_intruder(request, username, "Bypass attempt to purge user credentials")
+        log_and_ban_intruder(request, username_clean, "Bypass attempt to purge user credentials")
         raise HTTPException(status_code=403, detail="Access denied.")
         
     target_clean = target_user.strip().lower()
@@ -2045,7 +2071,9 @@ async def get_academic_posts():
 
 @app.post("/api/academic/posts")
 async def create_academic_post(req: AcademicPostRequest, role: str = Query(...), username: str = Query(...), request: Request = None):
-    username_clean = username.strip().lower()
+    user = get_user_from_session(request)
+    role = user["role"]
+    username_clean = user["username"].strip().lower()
     if role not in ["admin", "faculty"]:
         raise HTTPException(status_code=403, detail="Only administrator or faculty accounts can publish announcements.")
     
