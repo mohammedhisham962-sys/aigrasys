@@ -454,6 +454,10 @@ def detect_malicious_payload(data_str: str) -> bool:
 rate_limit_store = {}
 
 def check_rate_limit(ip: str, path: str) -> bool:
+    # Exclude light background checks to prevent pollers from exhausting limits
+    if path in ["/api/health", "/api/auth/status"]:
+        return True
+
     now = time.time()
     if ip not in rate_limit_store:
         rate_limit_store[ip] = {"failed_attempts": 0, "last_attempt": 0, "req_count": 0, "req_reset": now + 60}
@@ -467,8 +471,8 @@ def check_rate_limit(ip: str, path: str) -> bool:
         
     store["req_count"] += 1
     
-    # Strict thresholds: More than 45 requests per minute, or 6 failed logins
-    if store["req_count"] > 45 or store["failed_attempts"] >= 6:
+    # Raised threshold to 6000 requests per minute to accommodate 80-90 students concurrently
+    if store["req_count"] > 6000 or store["failed_attempts"] >= 6:
         return False
     return True
 
